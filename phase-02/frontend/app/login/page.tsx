@@ -3,6 +3,7 @@
  * User login page with form
  */
 
+import { Suspense } from 'react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import Link from 'next/link';
 
@@ -21,7 +22,9 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-        <LoginForm />
+        <Suspense fallback={<div className="text-center">Loading...</div>}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

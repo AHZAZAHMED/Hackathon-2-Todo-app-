@@ -18,10 +18,9 @@ import { apiClient } from '@/lib/api-client';
 interface TaskListProps {
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
-  onTasksChange: () => void;
 }
 
-export function TaskList({ tasks, setTasks, onTasksChange }: TaskListProps) {
+export function TaskList({ tasks, setTasks }: TaskListProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

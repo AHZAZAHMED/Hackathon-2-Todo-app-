@@ -59,10 +59,16 @@ export default function DashboardPage() {
           <p className="mt-2 text-gray-600">Manage your tasks and track your progress</p>
         </div>
 
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
         <StatsCards tasks={tasks} />
 
         <div className="mt-8">
-          <TaskList tasks={tasks} setTasks={setTasks} onTasksChange={loadTasks} />
+          <TaskList tasks={tasks} setTasks={setTasks} />
         </div>
       </div>
     </div>
