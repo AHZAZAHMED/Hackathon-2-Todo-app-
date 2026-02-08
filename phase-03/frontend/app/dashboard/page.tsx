@@ -1,12 +1,13 @@
 /**
  * Dashboard page
  * Main dashboard with task statistics and task list
- * Protected by middleware - only authenticated users can access
+ * Protected route - redirects to login if not authenticated
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { TaskList } from '@/components/dashboard/TaskList';
@@ -14,15 +15,25 @@ import { Task } from '@/types/task';
 import { apiClient } from '@/lib/api-client';
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login?redirect=/dashboard');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
   // Fetch tasks on mount
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (isAuthenticated) {
+      loadTasks();
+    }
+  }, [isAuthenticated]);
 
   const loadTasks = async () => {
     try {
