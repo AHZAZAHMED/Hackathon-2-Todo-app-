@@ -81,26 +81,40 @@ class TodoItem:
 
     def __str__(self):
         """Return a string representation of the todo item for display."""
-        status = "[x]" if self.completed else "[ ]"
-        priority_str = self.priority.upper()[0]  # First letter: H, M, L
-        tags_str = ""
-        if self.tags:
-            tags_str = f" [{', '.join(self.tags)}]"
+        status = "✓" if self.completed else "○"
 
-        # Add due date info if present
-        due_str = ""
+        # Priority with symbols
+        priority_map = {"high": "!!!", "medium": "!!", "low": "!"}
+        priority_str = priority_map[self.priority]
+
+        # Build the main line
+        line = f"  [{self.id:2d}] {status} {self.description}"
+
+        # Add metadata on the same line
+        metadata = []
+
+        # Priority
+        metadata.append(f"Priority:{priority_str}")
+
+        # Due date
         if self.due_date:
             if self.is_overdue():
-                due_str = f" (DUE:{self.due_date}*OVERDUE*)"
+                metadata.append(f"Due:{self.due_date} **OVERDUE**")
             else:
-                due_str = f" (DUE:{self.due_date})"
+                metadata.append(f"Due:{self.due_date}")
 
-        # Add recurrence info if present
-        recurrence_str = ""
+        # Recurrence
         if self.recurrence_pattern:
-            recurrence_str = f" [RECURRING:{self.recurrence_pattern.upper()}]"
+            metadata.append(f"Recurs:{self.recurrence_pattern.capitalize()}")
 
-        return f"{self.id}. {status} [{priority_str}] {self.description}{due_str}{recurrence_str}{tags_str}"
+        # Tags
+        if self.tags:
+            metadata.append(f"Tags:{', '.join(self.tags)}")
+
+        if metadata:
+            line += f"\n      └─ {' | '.join(metadata)}"
+
+        return line
 
 
 def validate_date_format(date_str: str) -> bool:
@@ -481,8 +495,8 @@ def handle_add_command(todo_list: TodoList, args: List[str]) -> str:
 
     description = " ".join(args[1:])
     try:
-        todo_list.add_item(description)
-        return f"Added: {description}"
+        item = todo_list.add_item(description)
+        return f"Task added successfully!\n  ID: {item.id} | Description: {description}"
     except ValueError as e:
         return f"Error: {str(e)}"
 
@@ -491,11 +505,22 @@ def handle_view_command(todo_list: TodoList) -> str:
     """Handle the 'view' command to display all todo items."""
     items = todo_list.view_items()
     if not items:
-        return "No items in your todo list"
+        return "\n  No items in your todo list yet.\n  Use 'add <description>' to create your first task!\n"
 
     output_lines = []
+    output_lines.append("\n" + "="*70)
+    output_lines.append("  YOUR TODO LIST")
+    output_lines.append("="*70)
+
+    completed_count = sum(1 for item in items if item.completed)
+    total_count = len(items)
+    output_lines.append(f"  Total: {total_count} tasks | Completed: {completed_count} | Pending: {total_count - completed_count}")
+    output_lines.append("-"*70)
+
     for item in items:
         output_lines.append(str(item))
+
+    output_lines.append("="*70 + "\n")
     return "\n".join(output_lines)
 
 
@@ -515,7 +540,7 @@ def handle_update_command(todo_list: TodoList, args: List[str]) -> str:
 
         success = todo_list.update_item(item_id, new_description)
         if success:
-            return f"Updated item {item_id} to: {new_description}"
+            return f"Task #{item_id} updated successfully!\n  New description: {new_description}"
         else:
             return f"Error: Could not update item {item_id}. Item not found."
     except ValueError as e:
@@ -535,10 +560,13 @@ def handle_delete_command(todo_list: TodoList, args: List[str]) -> str:
         if not validate_index(todo_list, item_id):
             return f"Error: Invalid item ID '{item_id}'. Please provide a valid item number."
 
-        items_before = len(todo_list.view_items())
+        # Get item description before deleting
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+
         success = todo_list.delete_item(item_id)
         if success:
-            return f"Deleted item {item_id}"
+            return f"Task #{item_id} deleted successfully!\n  Deleted: {description}"
         else:
             return f"Error: Could not delete item {item_id}. Item not found."
     except ValueError as e:
@@ -558,9 +586,17 @@ def handle_complete_command(todo_list: TodoList, args: List[str]) -> str:
         if not validate_index(todo_list, item_id):
             return f"Error: Invalid item ID '{item_id}'. Please provide a valid item number."
 
+        # Get item details before marking complete
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+        is_recurring = item.recurrence_pattern if item else None
+
         success = todo_list.mark_complete(item_id)
         if success:
-            return f"Marked item {item_id} as complete"
+            msg = f"Task #{item_id} marked as complete!\n  Completed: {description}"
+            if is_recurring:
+                msg += f"\n  Note: Next occurrence scheduled automatically ({is_recurring} recurrence)"
+            return msg
         else:
             return f"Error: Could not mark item {item_id} as complete. Item not found."
     except ValueError as e:
@@ -580,9 +616,13 @@ def handle_incomplete_command(todo_list: TodoList, args: List[str]) -> str:
         if not validate_index(todo_list, item_id):
             return f"Error: Invalid item ID '{item_id}'. Please provide a valid item number."
 
+        # Get item details before marking incomplete
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+
         success = todo_list.mark_incomplete(item_id)
         if success:
-            return f"Marked item {item_id} as incomplete"
+            return f"Task #{item_id} marked as incomplete!\n  Task: {description}"
         else:
             return f"Error: Could not mark item {item_id} as incomplete. Item not found."
     except ValueError as e:
@@ -606,9 +646,14 @@ def handle_set_priority_command(todo_list: TodoList, args: List[str]) -> str:
         if priority_level not in ["high", "medium", "low"]:
             return f"Error: Invalid priority level '{priority_level}'. Valid options are: high, medium, low"
 
+        # Get item details
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+
         success = todo_list.set_priority(item_id, priority_level)
         if success:
-            return f"Set priority of item {item_id} to {priority_level}"
+            priority_symbols = {"high": "!!!", "medium": "!!", "low": "!"}
+            return f"Priority updated for task #{item_id}!\n  Task: {description}\n  New Priority: {priority_level.upper()} ({priority_symbols[priority_level]})"
         else:
             return f"Error: Could not set priority of item {item_id}. Item not found."
     except ValueError as e:
@@ -633,9 +678,13 @@ def handle_tag_command(todo_list: TodoList, args: List[str]) -> str:
             if not tag or tag.strip() == "":
                 raise ValueError("Tags cannot be empty or whitespace-only")
 
+        # Get item details
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+
         success = todo_list.add_tags(item_id, tags)
         if success:
-            return f"Added tags {', '.join([f'{t}' for t in tags])} to item {item_id}"
+            return f"Tags added to task #{item_id}!\n  Task: {description}\n  Added tags: {', '.join(tags)}"
         else:
             return f"Error: Could not add tags to item {item_id}. Item not found."
     except ValueError as e:
@@ -658,11 +707,17 @@ def handle_search_command(todo_list: TodoList, args: List[str]) -> str:
         results = todo_list.search_items(keyword.strip())
         if results:
             output_lines = []
+            output_lines.append("\n" + "="*70)
+            output_lines.append(f"  SEARCH RESULTS FOR: '{keyword}'")
+            output_lines.append("="*70)
+            output_lines.append(f"  Found {len(results)} matching task(s)")
+            output_lines.append("-"*70)
             for item in results:
                 output_lines.append(str(item))
+            output_lines.append("="*70 + "\n")
             return "\n".join(output_lines)
         else:
-            return f"No tasks found matching '{keyword}'"
+            return f"\n  No tasks found matching '{keyword}'\n"
     except ValueError as e:
         return f"Error: {str(e)}"
 
@@ -689,11 +744,17 @@ def handle_filter_command(todo_list: TodoList, args: List[str]) -> str:
         results = todo_list.filter_items(criteria, value)
         if results:
             output_lines = []
+            output_lines.append("\n" + "="*70)
+            output_lines.append(f"  FILTERED BY: {criteria.upper()} = {value.upper()}")
+            output_lines.append("="*70)
+            output_lines.append(f"  Found {len(results)} matching task(s)")
+            output_lines.append("-"*70)
             for item in results:
                 output_lines.append(str(item))
+            output_lines.append("="*70 + "\n")
             return "\n".join(output_lines)
         else:
-            return f"No tasks found matching filter: {criteria}={value}"
+            return f"\n  No tasks found matching filter: {criteria}={value}\n"
     except ValueError as e:
         return f"Error: {str(e)}"
 
@@ -716,18 +777,28 @@ def handle_sort_command(todo_list: TodoList, args: List[str]) -> str:
         results = todo_list.sort_items(normalized_criteria)
         if results:
             output_lines = []
+            output_lines.append("\n" + "="*70)
+            output_lines.append(f"  SORTED BY: {normalized_criteria.upper()}")
+            output_lines.append("="*70)
+            output_lines.append(f"  Total: {len(results)} task(s)")
+            output_lines.append("-"*70)
             for item in results:
                 output_lines.append(str(item))
+            output_lines.append("="*70 + "\n")
             return "\n".join(output_lines)
         else:
             # Even if list is empty, we return an empty list
             items = todo_list.view_items()
             if not items:
-                return "No items in your todo list"
+                return "\n  No items in your todo list yet.\n"
             else:
                 output_lines = []
+                output_lines.append("\n" + "="*70)
+                output_lines.append(f"  SORTED BY: {normalized_criteria.upper()}")
+                output_lines.append("="*70)
                 for item in items:  # Show all items if sorting doesn't filter them
                     output_lines.append(str(item))
+                output_lines.append("="*70 + "\n")
                 return "\n".join(output_lines)
     except ValueError as e:
         return f"Error: {str(e)}"
@@ -748,7 +819,7 @@ def handle_add_recurring_command(todo_list: TodoList, args: List[str]) -> str:
             raise ValueError("Description cannot be empty or whitespace-only")
 
         item = todo_list.add_recurring_task(description, pattern)
-        return f"Added recurring task: {description} ({pattern} recurrence)"
+        return f"Recurring task added successfully!\n  ID: {item.id} | Description: {description}\n  Recurrence: {pattern.capitalize()} (auto-reschedules when completed)"
     except ValueError as e:
         return f"Error: {str(e)}"
 
@@ -767,9 +838,27 @@ def handle_set_due_command(todo_list: TodoList, args: List[str]) -> str:
         if not validate_date_format(due_date):
             return f"Error: Invalid date format '{due_date}'. Please use YYYY-MM-DD format."
 
+        # Get item details
+        item = todo_list._get_item_by_id(item_id)
+        description = item.description if item else "Unknown"
+
         success = todo_list.set_due_date(item_id, due_date)
         if success:
-            return f"Set due date for item {item_id} to {due_date}"
+            # Check if the date is in the past
+            try:
+                due = datetime.strptime(due_date, '%Y-%m-%d').date()
+                today = date.today()
+                if due < today:
+                    status_note = "(This date is in the past - task will show as OVERDUE)"
+                elif due == today:
+                    status_note = "(Due today!)"
+                else:
+                    days_until = (due - today).days
+                    status_note = f"({days_until} day{'s' if days_until != 1 else ''} from now)"
+            except:
+                status_note = ""
+
+            return f"Due date set for task #{item_id}!\n  Task: {description}\n  Due date: {due_date} {status_note}"
         else:
             return f"Error: Could not set due date for item {item_id}. Item not found."
     except ValueError as e:
@@ -785,11 +874,17 @@ def handle_overdue_command(todo_list: TodoList) -> str:
 
     if overdue_items:
         output_lines = []
+        output_lines.append("\n" + "="*70)
+        output_lines.append("  ⚠ OVERDUE TASKS")
+        output_lines.append("="*70)
+        output_lines.append(f"  You have {len(overdue_items)} overdue task(s) that need attention!")
+        output_lines.append("-"*70)
         for item in overdue_items:
             output_lines.append(str(item))
+        output_lines.append("="*70 + "\n")
         return "\n".join(output_lines)
     else:
-        return "No overdue tasks"
+        return "\n  ✓ Great! No overdue tasks.\n"
 
 
 def handle_remind_command(todo_list: TodoList) -> str:
@@ -799,27 +894,62 @@ def handle_remind_command(todo_list: TodoList) -> str:
 
     if due_soon_items:
         output_lines = []
+        output_lines.append("\n" + "="*70)
+        output_lines.append("  ⏰ UPCOMING TASKS (Next 24 Hours)")
+        output_lines.append("="*70)
+        output_lines.append(f"  You have {len(due_soon_items)} task(s) due soon!")
+        output_lines.append("-"*70)
         for item in due_soon_items:
             output_lines.append(str(item))
+        output_lines.append("="*70 + "\n")
         return "\n".join(output_lines)
     else:
-        return "No upcoming tasks due in the next 24 hours"
+        return "\n  ✓ No upcoming tasks due in the next 24 hours.\n"
 
 
 def main():
     """Main application loop to handle user commands."""
     todo_list = TodoList()
 
-    print("Welcome to the Enhanced Todo App!")
-    print("Available commands: add, view, update, delete, complete, incomplete, set-priority, tag, search, filter, sort, add-recurring, set-due, overdue, remind, quit")
+    # Welcome screen
+    print("\n" + "="*70)
+    print("  ✓ ENHANCED TODO APPLICATION")
+    print("="*70)
+    print("  Manage your tasks efficiently with priorities, tags, and reminders!")
+    print("-"*70)
+    print("\n  AVAILABLE COMMANDS:")
+    print("  ┌─ Basic Commands")
+    print("  │  • add <description>           - Add a new task")
+    print("  │  • view                         - View all tasks")
+    print("  │  • update <id> <description>    - Update a task")
+    print("  │  • delete <id>                  - Delete a task")
+    print("  │  • complete <id>                - Mark task as complete")
+    print("  │  • incomplete <id>              - Mark task as incomplete")
+    print("  │")
+    print("  ├─ Organization Commands")
+    print("  │  • set-priority <id> <level>    - Set priority (high/medium/low)")
+    print("  │  • tag <id> <tag1> [tag2]...    - Add tags to a task")
+    print("  │  • search <keyword>             - Search tasks by keyword")
+    print("  │  • filter <criteria> <value>    - Filter tasks")
+    print("  │  • sort <criteria>              - Sort tasks")
+    print("  │")
+    print("  ├─ Advanced Commands")
+    print("  │  • add-recurring <pattern> <desc> - Add recurring task")
+    print("  │  • set-due <id> <YYYY-MM-DD>    - Set due date")
+    print("  │  • overdue                      - Show overdue tasks")
+    print("  │  • remind                       - Show tasks due in 24 hours")
+    print("  │")
+    print("  └─ Other")
+    print("     • quit                         - Exit the application")
+    print("\n" + "="*70 + "\n")
 
     while True:
         try:
             # Get user input
-            user_input = input("\nEnter command: ").strip()
+            user_input = input("→ Enter command: ").strip()
 
             if not user_input:
-                print("Please enter a command.")
+                print("  ⚠ Please enter a command.\n")
                 continue
 
             # Parse the command
@@ -829,7 +959,7 @@ def main():
             # Handle different commands
             if command == "add":
                 result = handle_add_command(todo_list, args)
-                print(result)
+                print(f"\n  ✓ {result}\n")
 
             elif command == "view":
                 result = handle_view_command(todo_list)
@@ -837,27 +967,45 @@ def main():
 
             elif command == "update":
                 result = handle_update_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "delete":
                 result = handle_delete_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "complete":
                 result = handle_complete_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "incomplete":
                 result = handle_incomplete_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "set-priority":
                 result = handle_set_priority_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "tag":
                 result = handle_tag_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "search":
                 result = handle_search_command(todo_list, args)
@@ -873,11 +1021,17 @@ def main():
 
             elif command == "add-recurring":
                 result = handle_add_recurring_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "set-due":
                 result = handle_set_due_command(todo_list, args)
-                print(result)
+                if result.startswith("Error"):
+                    print(f"\n  ✗ {result}\n")
+                else:
+                    print(f"\n  ✓ {result}\n")
 
             elif command == "overdue":
                 result = handle_overdue_command(todo_list)
@@ -888,17 +1042,24 @@ def main():
                 print(result)
 
             elif command == "quit":
-                print("Goodbye!")
+                print("\n" + "="*70)
+                print("  Thank you for using Enhanced Todo Application!")
+                print("  Goodbye! 👋")
+                print("="*70 + "\n")
                 break
 
             else:
-                print(f"Unknown command: {command}. Available commands: add, view, update, delete, complete, incomplete, set-priority, tag, search, filter, sort, add-recurring, set-due, overdue, remind, quit")
+                print(f"\n  ✗ Unknown command: '{command}'")
+                print("  Type 'view' to see your tasks or try one of the available commands.\n")
 
         except KeyboardInterrupt:
-            print("\nGoodbye!")
+            print("\n\n" + "="*70)
+            print("  Thank you for using Enhanced Todo Application!")
+            print("  Goodbye! 👋")
+            print("="*70 + "\n")
             break
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f"\n  ✗ An unexpected error occurred: {e}\n")
 
 
 if __name__ == "__main__":

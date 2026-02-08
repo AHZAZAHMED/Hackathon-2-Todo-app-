@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Phase-3 Chat API
+  description: |
+    API contract for Phase-3 chatbot frontend communication with FastAPI backend.
+
+    **Authentication**: All endpoints require JWT authentication via Authorization header.
+
+    **User Isolation**: user_id is extracted from JWT claims by backend (never sent by frontend).
+
+    **Stateless**: Backend does not maintain session state. All conversation state persisted in database.
+  version: 1.0.0
+  contact:
+    name: Phase-3 Development Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.production.com
+    description: Production server (configured via NEXT_PUBLIC_API_BASE_URL)
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/chat:
+    post:
+      summary: Send chat message
+      description: |
+        Send a user message to the AI chatbot and receive an assistant response.
+
+        **Flow**:
+        1. Frontend sends user message with JWT
+        2. Backend extracts user_id from JWT
+        3. Backend loads conversation history from database
+        4. Backend stores user message in database
+        5. Backend invokes AI agent with conversation context
+        6. AI agent selects and invokes MCP tools as needed
+        7. Backend stores assistant response in database
+        8. Backend returns assistant response to frontend
+
+        **Authentication**: JWT required in Authorization header
+
+        **User Isolation**: Backend filters all data by user_id from JWT
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: User message content (must be non-empty after trimming)
+                  minLength: 1
+                  maxLength: 10000
+                  example: "Add a task to buy groceries"
+            examples:
+              addTask:
+                summary: Add task request
+                value:
+                  message: "Add a task to buy groceries"
+              listTasks:
+                summary: List tasks request
+                value:
+                  message: "What are my tasks?"
+              completeTask:
+                summary: Complete task request
+                value:
+                  message: "Mark the groceries task as complete"
+      responses:
+        '200':
+          description: Successful response with assistant message
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - response
+                  - conversation_id
+                  - timestamp
+                properties:
+                  response:
+                    type: string
+                    description: Assistant's response message
+                    example: "I've added 'Buy groceries' to your task list."
+                  conversation_id:
+                    type: string
+                    description: Unique conversation identifier
+                    example: "conv_abc123xyz"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of the response
+                    example: "2026-02-08T10:30:15Z"
+              examples:
+                taskAdded:
+                  summary: Task added successfully
+                  value:
+                    response: "I've added 'Buy groceries' to your task list."
+                    conversation_id: "conv_abc123xyz"
+                    timestamp: "2026-02-08T10:30:15Z"
+                tasksList:
+                  summary: Tasks listed
+                  value:
+                    response: "You have 3 tasks:\n1. Buy groceries\n2. Finish report\n3. Call dentist"
+                    conversation_id: "conv_abc123xyz"
+                    timestamp: "2026-02-08T10:30:20Z"
+        '401':
+          description: Unauthorized - Invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingToken:
+                  summary: Missing JWT token
+                  value:
+                    error: "Unauthorized"
+                    message: "Missing authentication token"
+                    code: "auth_error"
+                invalidToken:
+                  summary: Invalid JWT token
+                  value:
+                    error: "Unauthorized"
+                    message: "Invalid authentication token"
+                    code: "auth_error"
+                expiredToken:
+                  summary: Expired JWT token
+                  value:
+                    error: "Unauthorized"
+                    message: "Authentication token has expired"
+                    code: "auth_error"
+        '422':
+          description: Validation error - Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                emptyMessage:
+                  summary: Empty message
+                  value:
+                    error: "Validation Error"
+                    message: "Message cannot be empty"
+                    code: "validation_error"
+                messageTooLong:
+                  summary: Message too long
+                  value:
+                    error: "Validation Error"
+                    message: "Message exceeds maximum length of 10000 characters"
+                    code: "validation_error"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                serverError:
+                  summary: Generic server error
+                  value:
+                    error: "Internal Server Error"
+                    message: "Unable to process request. Please try again."
+                    code: "server_error"
+
+  /api/chat/history:
+    get:
+      summary: Get conversation history
+      description: |
+        Retrieve the conversation history for the authenticated user.
+
+        **Flow**:
+        1. Frontend requests conversation history with JWT
+        2. Backend extracts user_id from JWT
+        3. Backend fetches conversation and messages from database (filtered by user_id)
+        4. Backend returns messages in chronological order
+
+        **Authentication**: JWT required in Authorization header
+
+        **User Isolation**: Backend only returns messages for authenticated user
+      operationId: getChatHistory
+      tags:
+        - Chat
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of messages to return (default 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          description: Number of messages to skip (for pagination)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Successful response with conversation history
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - messages
+                  - conversation_id
+                properties:
+                  messages:
+                    type: array
+                    description: Array of messages in chronological order (oldest first)
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - role
+                        - content
+                        - created_at
+                      properties:
+                        id:
+                          type: string
+                          description: Unique message identifier
+                          example: "msg_xyz789"
+                        role:
+                          type: string
+                          enum: [user, assistant]
+                          description: Message sender role
+                          example: "user"
+                        content:
+                          type: string
+                          description: Message text content
+                          example: "Add a task to buy groceries"
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: ISO 8601 timestamp when message was created
+                          example: "2026-02-08T10:30:00Z"
+                  conversation_id:
+                    type: string
+                    description: Unique conversation identifier
+                    example: "conv_abc123xyz"
+                  total_count:
+                    type: integer
+                    description: Total number of messages in conversation (for pagination)
+                    example: 25
+              examples:
+                withMessages:
+                  summary: Conversation with messages
+                  value:
+                    messages:
+                      - id: "msg_001"
+                        role: "user"
+                        content: "Add a task to buy groceries"
+                        created_at: "2026-02-08T10:30:00Z"
+                      - id: "msg_002"
+                        role: "assistant"
+                        content: "I've added 'Buy groceries' to your task list."
+                        created_at: "2026-02-08T10:30:15Z"
+                      - id: "msg_003"
+                        role: "user"
+                        content: "What are my tasks?"
+                        created_at: "2026-02-08T10:31:00Z"
+                      - id: "msg_004"
+                        role: "assistant"
+                        content: "You have 1 task:\n1. Buy groceries"
+                        created_at: "2026-02-08T10:31:05Z"
+                    conversation_id: "conv_abc123xyz"
+                    total_count: 4
+                emptyConversation:
+                  summary: New conversation (no messages)
+                  value:
+                    messages: []
+                    conversation_id: "conv_new456"
+                    total_count: 0
+        '401':
+          description: Unauthorized - Invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token issued by Better Auth on login.
+
+        **Format**: `Authorization: Bearer <token>`
+
+        **Claims**: Token contains user_id claim extracted by backend.
+
+        **Frontend**: Token automatically attached by centralized API client.
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+        - message
+        - code
+      properties:
+        error:
+          type: string
+          description: Error type (short description)
+          example: "Validation Error"
+        message:
+          type: string
+          description: User-friendly error message
+          example: "Message cannot be empty"
+        code:
+          type: string
+          enum:
+            - auth_error
+            - validation_error
+            - server_error
+            - network_error
+            - timeout_error
+            - unknown_error
+          description: Machine-readable error code
+          example: "validation_error"
+        details:
+          type: object
+          description: Optional additional error details (for debugging)
+          additionalProperties: true
+
+tags:
+  - name: Chat
+    description: Chat endpoints for conversational todo management
