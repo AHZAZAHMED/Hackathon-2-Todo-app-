@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Custom primary colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  /* Z-index hierarchy for chat components */
+  --z-50: 50;  /* Chat window */
+  --z-60: 60;  /* Floating chat icon (above window) */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Chat window animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-window-enter {
+  animation: slideUp 300ms ease-in-out;
+}
+
+/* ChatKit custom styling */
+openai-chatkit {
+  --chatkit-primary-color: #3b82f6;
+  --chatkit-user-message-bg: #3b82f6;
+  --chatkit-assistant-message-bg: #f3f4f6;
+  --chatkit-user-message-text: #ffffff;
+  --chatkit-assistant-message-text: #1f2937;
+  --chatkit-input-bg: #ffffff;
+  --chatkit-input-border: #e5e7eb;
+  --chatkit-font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
