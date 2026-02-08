@@ -94,7 +94,7 @@ async def chat_endpoint(
         store_message(
             session=session,
             conversation_id=conversation.id,
-            role=MessageRole.USER,
+            role="user",
             content=request.message
         )
 
@@ -137,7 +137,7 @@ async def chat_endpoint(
         store_message(
             session=session,
             conversation_id=conversation.id,
-            role=MessageRole.ASSISTANT,
+            role="assistant",
             content=agent_response["content"]
         )
 
