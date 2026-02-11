@@ -262,7 +262,7 @@ spec → plan → tasks → implementation
 
 **Schema Requirements**:
 
-### Phase-2 Tables (EXISTING)
+### Phase-2 Tables (Existing)
 
 **`user` table**:
 - Managed by Better Auth via Prisma
