@@ -35,6 +35,13 @@ if not DATABASE_URL:
 # CORS Configuration
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# Additional allowed origins for CORS (comma-separated)
+# This allows multiple frontend URLs for different environments
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLOWED_ORIGINS") else []
+
+# Combine FRONTEND_URL with additional origins
+ALL_ALLOWED_ORIGINS = [FRONTEND_URL] + [origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]
+
 # Server Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))

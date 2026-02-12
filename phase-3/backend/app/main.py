@@ -7,7 +7,7 @@ import logging
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
-from app.config import FRONTEND_URL
+from app.config import ALL_ALLOWED_ORIGINS
 from app.auth.dependencies import get_current_user
 from app.routes import tasks, chat
 
@@ -29,15 +29,9 @@ app = FastAPI(
 
 # Configure CORS middleware
 # Allow both development (localhost) and production URLs
-allowed_origins = [
-    "http://localhost:3000",  # Development
-    "http://localhost:3001",  # Development (alternative port)
-    "https://hackathon-2-todo-app-g4w4.vercel.app",  # Production
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,  # Specific origins (required for credentials)
+    allow_origins=ALL_ALLOWED_ORIGINS,  # Use configured origins from environment
     allow_credentials=True,  # Required for JWT/cookies
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
@@ -106,7 +100,7 @@ async def startup_event():
     Runs when the application starts.
     """
     print("[INFO] Hackathon Phase-3 API starting...")
-    print(f"[INFO] CORS enabled for: {FRONTEND_URL}")
+    print(f"[INFO] CORS enabled for origins: {', '.join(ALL_ALLOWED_ORIGINS)}")
     print("[INFO] Task CRUD endpoints registered at /api/tasks")
     print("[INFO] Chat endpoint registered at /api/chat")
     print("[SUCCESS] Application ready")
