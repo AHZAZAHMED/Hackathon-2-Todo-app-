@@ -11,9 +11,11 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { isValidEmail, isValidPassword } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function SignupForm() {
   const router = useRouter();
+  const { refreshSession } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,6 +83,9 @@ export function SignupForm() {
       }
 
       // Successful signup - JWT token is automatically stored in httpOnly cookie
+      // Refresh session to update AuthProvider state with user data
+      await refreshSession();
+
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error: any) {

@@ -11,10 +11,12 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { isValidEmail } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,6 +88,9 @@ export function LoginForm() {
       }
 
       // Successful login - JWT token is automatically stored in httpOnly cookie
+      // Refresh session to update AuthProvider state with user data
+      await refreshSession();
+
       // Redirect to original URL or dashboard
       router.push(redirectUrl);
     } catch (error: any) {
