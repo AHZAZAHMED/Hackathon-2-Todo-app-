@@ -7,6 +7,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Task } from '@/types/task';
+import { useSession } from '@/lib/auth-client';
 
 interface TasksContextValue {
   tasks: Task[];
@@ -20,10 +21,18 @@ const TasksContext = createContext<TasksContextValue | undefined>(undefined);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   const refreshTasks = useCallback(async () => {
+    // Only fetch tasks if user is authenticated
+    if (!session?.user) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -35,12 +44,19 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.user]);
 
-  // Load tasks on mount
+  // Load tasks when user becomes authenticated
   useEffect(() => {
-    refreshTasks();
-  }, [refreshTasks]);
+    if (session?.user) {
+      refreshTasks();
+    } else {
+      // Clear tasks when user logs out
+      setTasks([]);
+      setLoading(false);
+      setError(null);
+    }
+  }, [session?.user, refreshTasks]);
 
   const value: TasksContextValue = {
     tasks,
