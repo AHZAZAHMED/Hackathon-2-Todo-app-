@@ -2,8 +2,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useChat } from '@/hooks/useChat';
-import { useChatAuth } from '@/hooks/useChatAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useTasks } from '@/contexts/TasksContext';
 import { saveChatState, loadChatState } from '@/lib/chat-storage';
 
@@ -24,7 +25,8 @@ const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, isLoading: isAuthLoading, redirectToLogin } = useChatAuth();
+  const router = useRouter();
+  const { isAuthenticated, loading: isAuthLoading } = useAuth();
   const { refreshTasks } = useTasks();
   const {
     messages,
@@ -60,7 +62,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     // Check authentication before opening
     if (!isOpen && !isAuthenticated) {
-      redirectToLogin();
+      const currentPath = window.location.pathname;
+      router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -75,7 +78,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     // Check authentication before opening
     if (!isAuthenticated) {
-      redirectToLogin();
+      const currentPath = window.location.pathname;
+      router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -94,7 +98,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       // Handle unauthorized error (token expiry)
       if (err.message === 'UNAUTHORIZED') {
-        redirectToLogin();
+        const currentPath = window.location.pathname;
+        router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
       }
     }
   };
