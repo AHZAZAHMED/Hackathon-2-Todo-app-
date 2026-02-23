@@ -66,13 +66,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       // Call Better Auth signOut to clear JWT token from httpOnly cookie
-      await authClient.signOut();
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            // Clear any client-side storage
+            if (typeof window !== 'undefined') {
+              sessionStorage.clear();
+              localStorage.clear();
+            }
+          },
+        },
+      });
 
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state for security
+      // Even if logout fails, clear local state and storage for security
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+        localStorage.clear();
+      }
       setIsAuthenticated(false);
       setUser(null);
     }

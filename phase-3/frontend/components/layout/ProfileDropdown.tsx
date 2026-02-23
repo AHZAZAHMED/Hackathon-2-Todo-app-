@@ -61,13 +61,29 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
 
     try {
       // Call Better Auth signOut to clear JWT token from httpOnly cookie
-      await authClient.signOut();
-
-      // Redirect to landing page after successful logout
-      router.push('/');
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            // Clear any client-side storage
+            if (typeof window !== 'undefined') {
+              sessionStorage.clear();
+              localStorage.clear();
+            }
+            // Force router refresh to clear cached session
+            router.refresh();
+            // Redirect to landing page after successful logout
+            router.push('/');
+          },
+        },
+      });
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, redirect to landing page for security
+      // Even if logout fails, clear storage and redirect for security
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+        localStorage.clear();
+      }
+      router.refresh();
       router.push('/');
     }
   };
