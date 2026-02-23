@@ -24,7 +24,7 @@ const ChatContext = createContext<ChatContextValue | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, isLoading, redirectToLogin } = useChatAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, redirectToLogin } = useChatAuth();
   const { refreshTasks } = useTasks();
   const {
     messages,
@@ -54,7 +54,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const toggleChat = () => {
     // Wait for authentication check to complete
-    if (isLoading) {
+    if (isAuthLoading) {
       return;
     }
 
@@ -69,7 +69,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const openChat = () => {
     // Wait for authentication check to complete
-    if (isLoading) {
+    if (isAuthLoading) {
       return;
     }
 
