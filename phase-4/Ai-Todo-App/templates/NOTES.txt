@@ -1,0 +1,84 @@
+🎉 Hackathon Phase-4 Todo App with AI Chatbot has been deployed!
+
+📦 Release Name: {{ .Release.Name }}
+🔧 Namespace: {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 ACCESSING YOUR APPLICATION
+
+1. Get your Minikube IP:
+
+   $ minikube ip
+
+2. Access the services:
+
+   Frontend (Next.js):
+   http://<minikube-ip>:{{ .Values.frontend.service.nodePort }}
+
+   Backend API (FastAPI):
+   http://<minikube-ip>:{{ .Values.backend.service.nodePort }}
+
+   Backend Health Check:
+   http://<minikube-ip>:{{ .Values.backend.service.nodePort }}/api/health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 CHECKING DEPLOYMENT STATUS
+
+View pods:
+  $ kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+View services:
+  $ kubectl get services -l app.kubernetes.io/instance={{ .Release.Name }}
+
+View logs (Backend):
+  $ kubectl logs -l app.kubernetes.io/component=backend -f
+
+View logs (Frontend):
+  $ kubectl logs -l app.kubernetes.io/component=frontend -f
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 UPDATING ENVIRONMENT VARIABLES
+
+After deployment, update frontend with Minikube IP:
+
+  $ MINIKUBE_IP=$(minikube ip)
+  $ kubectl set env deployment/{{ include "Ai-Todo-App.fullname" . }}-frontend \
+      NEXT_PUBLIC_API_URL=http://$MINIKUBE_IP:{{ .Values.backend.service.nodePort }} \
+      BETTER_AUTH_URL=http://$MINIKUBE_IP:{{ .Values.frontend.service.nodePort }} \
+      NEXT_PUBLIC_APP_URL=http://$MINIKUBE_IP:{{ .Values.frontend.service.nodePort }}
+
+  $ kubectl rollout restart deployment/{{ include "Ai-Todo-App.fullname" . }}-frontend
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TESTING THE DEPLOYMENT
+
+Run Helm tests:
+  $ helm test {{ .Release.Name }}
+
+Test backend health:
+  $ curl http://$(minikube ip):{{ .Values.backend.service.nodePort }}/api/health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 TROUBLESHOOTING
+
+If pods are not starting:
+  $ kubectl describe pod -l app.kubernetes.io/instance={{ .Release.Name }}
+
+If images are not found:
+  $ minikube image load hackathon-backend:latest
+  $ minikube image load hackathon-frontend:latest
+
+Port forward for local access:
+  $ kubectl port-forward service/{{ include "Ai-Todo-App.fullname" . }}-frontend 3000:{{ .Values.frontend.service.port }}
+  $ kubectl port-forward service/{{ include "Ai-Todo-App.fullname" . }}-backend 8000:{{ .Values.backend.service.port }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 For more information, see DEPLOYMENT.md
+
+Happy coding! 🚀

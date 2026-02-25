@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "Ai-Todo-App.fullname" . }}-test-backend"
+  labels:
+    {{- include "Ai-Todo-App.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "Ai-Todo-App.fullname" . }}-backend:{{ .Values.backend.service.port }}/api/health']
+  restartPolicy: Never

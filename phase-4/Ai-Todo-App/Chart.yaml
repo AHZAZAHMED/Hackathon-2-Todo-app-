@@ -1,0 +1,36 @@
+apiVersion: v2
+name: ai-todo-app
+description: Hackathon Phase-4 Todo App with AI Chatbot - Full-stack application with Next.js frontend and FastAPI backend
+
+# Chart type
+type: application
+
+# Chart version - increment when making changes to the chart
+version: 1.0.0
+
+# Application version - version of the Todo App being deployed
+appVersion: "2.0.0"
+
+# Maintainer information
+maintainers:
+  - name: Hackathon Team
+    email: team@hackathon.local
+
+# Keywords for chart discovery
+keywords:
+  - todo
+  - ai
+  - chatbot
+  - nextjs
+  - fastapi
+  - postgresql
+
+# Home page
+home: https://github.com/hackathon/todo-app
+
+# Sources
+sources:
+  - https://github.com/hackathon/todo-app
+
+# Icon (optional)
+# icon: https://example.com/icon.png

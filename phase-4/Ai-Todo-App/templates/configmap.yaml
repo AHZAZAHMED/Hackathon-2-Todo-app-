@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "Ai-Todo-App.fullname" . }}-config
+  labels:
+    {{- include "Ai-Todo-App.labels" . | nindent 4 }}
+data:
+  ai-model: {{ .Values.env.aiModel | quote }}
+  app-name: {{ .Values.env.appName | quote }}
