@@ -72,3 +72,76 @@ node_modules/
 # Build artifacts
 *.pyc
 *.pyo
+
+# Next.js
+.next/
+out/
+.turbo/
+
+# Frontend
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.turbo/
+
+# Test files and reports
+test_*.py
+test-*.js
+test_*.js
+*_test.py
+*.test.js
+test-results/
+test-screenshots/
+playwright-report/
+coverage/
+
+# Temporary documentation files (development artifacts)
+IMPLEMENTATION_STATUS.md
+IMPLEMENTATION_SUMMARY.md
+IMPLEMENTATION_COMPLETE.md
+VALIDATION_REPORT.md
+MCP_TESTING_GUIDE.md
+QUICK_TEST.md
+FINAL_SUMMARY.md
+
+# Batch and shell scripts (temporary)
+quick_test.bat
+start-port-forwards.bat
+*.bat
+*.sh
+!scripts/*.sh
+
+# Kubernetes/Docker temporary files
+*.log
+playwright-server.log
+backend-pf.log
+frontend-pf.log
+
+# Minikube/Kubernetes
+.kube/
+.minikube/
+
+# Prisma
+prisma/migrations/migration_lock.toml
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary files
+*.tmp
+*.temp
+.cache
+.temp/
+tmp/
