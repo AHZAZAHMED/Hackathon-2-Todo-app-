@@ -81,3 +81,8 @@ prisma/migrations/migration_lock.toml
 test-results/
 playwright-report/
 playwright/.cache/
+test-screenshots/
+test_screenshots/
+**/test-screenshots/
+**/test_screenshots/
+*.webm
