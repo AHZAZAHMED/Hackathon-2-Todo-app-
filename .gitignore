@@ -13,6 +13,9 @@ coverage/
 *.spec.tsx
 test_*.py
 *_test.py
+test-*.js
+test-*.py
+test-*.ts
 .pytest_cache/
 htmlcov/
 .coverage

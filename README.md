@@ -10,6 +10,7 @@ Hackathon-2/
 ├── phase-02/         # Full-Stack Todo App (Next.js + FastAPI + PostgreSQL)
 ├── phase-03/         # AI-Powered Chatbot Todo App (OpenAI Agents + MCP)
 ├── phase-3/          # Alternative implementation
+├── phase-4/          # Enhanced AI Chatbot with Claude Skills
 └── specs/            # Feature specifications and documentation
 ```
 
@@ -291,8 +292,33 @@ For issues or questions:
 
 ---
 
+## Phase 4: Enhanced AI Chatbot with Claude Skills
+
+**Stack:** Next.js 16 + FastAPI + OpenAI Agents SDK + MCP + PostgreSQL + Claude Code Skills
+
+An enhanced version of the AI chatbot with additional Claude Code skills and improved development workflow.
+
+### Features
+- All Phase 3 features
+- Claude Code skills for specialized tasks
+- Backend engineering skill (FastAPI)
+- Better Auth integration skill
+- Database management skill
+- Senior Next.js developer skill
+- Implementation validation with Playwright
+- Integration testing capabilities
+- Documentation co-authoring
+- Library documentation fetching
+
+### Setup
+
+Follow Phase 3 setup instructions. Phase 4 includes additional Claude Code skills in the `.claude/skills/` directory.
+
+---
+
 ## Project Status
 
 - ✅ Phase 1: Complete (Console Todo App)
 - ✅ Phase 2: Complete (Full-Stack Todo App)
-- 🚧 Phase 3: In Progress (AI Chatbot Integration)
+- ✅ Phase 3: Complete (AI Chatbot Integration)
+- ✅ Phase 4: Complete (Enhanced AI Chatbot with Claude Skills)
