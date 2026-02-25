@@ -33,6 +33,8 @@ dist/
 .env.test.local
 .env.production.local
 .env.*.local
+docker-compose.yml
+docker-compose.override.yml
 
 # Python
 __pycache__/
