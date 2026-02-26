@@ -36,6 +36,10 @@ dist/
 docker-compose.yml
 docker-compose.override.yml
 
+# Helm values with secrets
+**/values.yaml
+!**/values.example.yaml
+
 # Python
 __pycache__/
 *.py[cod]

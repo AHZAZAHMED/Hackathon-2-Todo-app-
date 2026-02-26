@@ -1,0 +1,161 @@
+# Hackathon Phase-4 Todo App with AI Chatbot
+# Helm Chart Values for Minikube Deployment
+# EXAMPLE FILE - Copy to values.yaml and fill in your actual values
+
+# Global configuration
+replicaCount: 1
+
+# Backend Service Configuration
+backend:
+  enabled: true
+  image:
+    repository: hackathon-backend
+    tag: latest
+    pullPolicy: Never  # Use local image in Minikube
+
+  service:
+    type: NodePort
+    port: 8000
+    nodePort: 30800  # Access backend at minikube-ip:30800
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Frontend Service Configuration
+frontend:
+  enabled: true
+  image:
+    repository: hackathon-frontend
+    tag: latest
+    pullPolicy: Never  # Use local image in Minikube
+
+  service:
+    type: NodePort
+    port: 3000
+    nodePort: 30300  # Access frontend at minikube-ip:30300
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Environment Variables Configuration
+# IMPORTANT: Copy this file to values.yaml and replace with your actual values
+env:
+  # Database Configuration (Neon PostgreSQL)
+  # Get from: https://console.neon.tech/
+  databaseUrl: "postgresql://username:password@host/database?sslmode=require"
+
+  # Better Auth Configuration
+  # Generate with: openssl rand -hex 32
+  betterAuthSecret: "your-64-character-hex-secret-here"
+
+  # AI Configuration (OpenRouter)
+  # Get from: https://openrouter.ai/keys
+  openrouterApiKey: "sk-or-v1-your-api-key-here"
+  aiModel: "openai/gpt-3.5-turbo"
+
+  # Application Configuration
+  appName: "Todo App"
+
+  # OpenAI ChatKit Configuration
+  # Get from: https://platform.openai.com/
+  openaiDomainKey: "domain_pk_your-domain-key-here"
+
+# Service Account
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# Pod Annotations and Labels
+podAnnotations: {}
+podLabels:
+  app: todo-app
+  version: "2.0.0"
+
+# Security Context
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+
+# Ingress Configuration (disabled for Minikube with NodePort)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: todo-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Autoscaling (disabled for local deployment)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node Selection
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
